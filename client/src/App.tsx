@@ -57,7 +57,7 @@ function MainView(props: { user: any }) {
 function SignOut() {
     return auth.currentUser && (
         <Button color="primary" onClick={() => auth.signOut()}>Sign Out</Button>
-    )
+    );
 }
 
 export default App;
