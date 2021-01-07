@@ -45,50 +45,36 @@ function SignIn() {
     );
 }
 
-interface CA {
+interface Screenshot {
     createdAt: firebase.firestore.Timestamp,
-}
-
-interface Screenshot extends CA {
     cnnFileName: string,
     foxFileName: string,
 }
 
-interface DTO extends CA {
-    cnnFilePath: string,
-    foxFilePath: string,
-}
-
 function MainView() {
-    const [dtos, setDtos] = useState<DTO[]>([]);
+    const [shots, setShots] = useState<Screenshot[]>([]);
 
     async function getData() {
         let query = db.collection('screenshots').orderBy('createdAt', 'desc').limit(10);
-        const lastElt = dtos[dtos.length - 1];
-        query = lastElt ? query.startAfter(lastElt.createdAt) : query;
+        const lastElt = shots[shots.length - 1];
+        if (lastElt)
+            query = query.startAfter(lastElt.createdAt);
         const data = await query.get();
 
-        const tempDtos: DTO[] = [];
-        data.forEach(doc => {
-            const temp = doc.data() as Screenshot;
-            tempDtos.push({
-                createdAt: temp.createdAt,
-                cnnFilePath: getImageUrl(temp.cnnFileName),
-                foxFilePath: getImageUrl(temp.foxFileName),
-            });
-        });
-        
-        setDtos(dtos.concat(tempDtos));
+        const tempDtos: Screenshot[] = [];
+        data.forEach(doc => tempDtos.push(doc.data() as Screenshot));
+
+        setShots(shots.concat(tempDtos));
     }
 
     return (
         <>
-            {dtos?.map(
-                ({ createdAt, cnnFilePath, foxFilePath }, i) => (
+            {shots?.map(
+                ({ createdAt, cnnFileName, foxFileName }, i) => (
                     <React.Fragment key={i}>
                         <p>Created At: {createdAt.toDate().toLocaleString()}</p>
-                        <img src={cnnFilePath} alt="cnn" />
-                        <img src={foxFilePath} alt="fox" />
+                        <img src={getImageUrl(cnnFileName)} alt="cnn" />
+                        <img src={getImageUrl(foxFileName)} alt="fox" />
                         <hr />
                     </React.Fragment>
                 )
