@@ -1,4 +1,11 @@
-foxnews.jpg
-cnn.jpg
+# deps
 node_modules/
+
+# data files
+cnn-*.jpg
+foxnews-*.jpg
+headline-archiver-*.json
+
+# build
 index.js
+index.exe

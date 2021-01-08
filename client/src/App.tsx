@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import './App.css';
 
-// import { collection, query, startAt, order, limit } from 'typesaurus';
-
 import { Button } from '@material-ui/core';
 
 import firebase from 'firebase/app';
