@@ -1,8 +1,8 @@
 import './App.css';
 
-import { Button, Container } from '@material-ui/core';
+import { Button, Container, Avatar } from '@material-ui/core';
 
-import { auth, GoogleAuthProvider } from './firebase';
+import { auth, GoogleAuthProvider, User } from './firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 import Header from './components/Header';
@@ -18,18 +18,20 @@ function SignIn() {
     );
 }
 
-function SignOut() {
+function SignOut(props: { name: string, url: string }) {
     return (
-        <Button color="inherit" onClick={() => auth.signOut()}>Sign Out</Button>
+        <Button color="inherit" onClick={() => auth.signOut()}>
+            <Avatar alt={props.name} src={props.url} style={{marginRight: '1rem'}} /> Sign Out
+        </Button>
     );
 }
 
 export default function App() {
-    const [user] = useAuthState(auth);
+    const [user] = useAuthState(auth) as [User | null, any, any];
     return (
         <>
             <Header>
-                {user ? <SignOut/> : <SignIn/>}
+                {user ? <SignOut name={user.displayName!} url={user.photoURL!} /> : <SignIn />}
             </Header>
             <Container maxWidth="lg">
                 <Main user={user} />
