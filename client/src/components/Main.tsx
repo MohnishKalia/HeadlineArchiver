@@ -1,8 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { db, Timestamp } from '../firebase';
 
-import Button from '@material-ui/core/Button';
 import Card from '@material-ui/core/Card';
 import CardActionArea from '@material-ui/core/CardActionArea';
 import CardMedia from '@material-ui/core/CardMedia';
@@ -17,6 +16,7 @@ import Modal from '@material-ui/core/Modal';
 import Fade from '@material-ui/core/Fade';
 import Backdrop from '@material-ui/core/Backdrop';
 import clsx from 'clsx';
+import { useInView } from 'react-intersection-observer';
 
 interface Screenshot {
     createdAt: Timestamp,
@@ -58,38 +58,45 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-
-// TODO: change into an async function that gets access tokens and is used in getData
 function getImageUrl(fileName: string) {
     return `https://firebasestorage.googleapis.com/v0/b/headline-archiver.appspot.com/o/screenshots%2F${fileName}?alt=media`;
 }
 
 export default function Main(props: { user: any }) {
     const [shots, setShots] = useState<Screenshot[]>([]);
+
     const [open, setOpen] = React.useState(false);
     const [modalFileName, setMFN] = React.useState("");
+    
+    const [ref, inView] = useInView({ delay: 500 });
+    const [eof, setEof] = useState(false);
+
+    const classes = useStyles();
 
     function handleOpen(fileName: string) {
         setOpen(true);
         setMFN(fileName);
     }
 
-    // const dummy = useRef<HTMLElement>(null!);
-    const increment = useRef(3);
-    const classes = useStyles();
+    useEffect(() => {
+        async function getData() {
+            let query = db.collection('screenshots').orderBy('createdAt', 'desc').limit(6);
+            const lastElt = shots[shots.length - 1];
+            if (lastElt)
+                query = query.startAfter(lastElt.createdAt);
+            const data = await query.get();
 
-    async function getData() {
-        let query = db.collection('screenshots').orderBy('createdAt', 'desc').limit(increment.current);
-        const lastElt = shots[shots.length - 1];
-        if (lastElt)
-            query = query.startAfter(lastElt.createdAt);
-        const data = await query.get();
+            const tempDtos: Screenshot[] = [];
+            data.forEach(doc => tempDtos.push(doc.data() as Screenshot));
 
-        const tempDtos: Screenshot[] = [];
-        data.forEach(doc => tempDtos.push(doc.data() as Screenshot));
-
-        setShots(shots.concat(tempDtos));
-    }
+            if (tempDtos.length === 0)
+                setEof(true);
+            setShots(shots.concat(tempDtos));
+        }
+        if (!eof && props.user && inView)
+            getData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [props.user, inView, eof]);
 
     if (!props.user)
         return (
@@ -108,6 +115,12 @@ export default function Main(props: { user: any }) {
                 <Grid item xs={3}>
                     <Highlight className={classes.menuButton} color="inherit" fontSize="large" />
                 </Grid>
+            </Grid>
+
+            <Grid item xs={12}>
+                <Typography variant="overline" display="block" gutterBottom align="center">
+                    Comparing CNN and Fox headlines at a specific time, click or tap to expand image
+                </Typography>
             </Grid>
 
             <Grid item xs={12}>
@@ -163,11 +176,7 @@ export default function Main(props: { user: any }) {
             </Modal>
 
             <Grid item xs={12}>
-                <Divider />
-            </Grid>
-
-            <Grid item xs={12}>
-                <Button color="primary" onClick={() => getData()}>Get {increment.current} More</Button>
+                <Divider ref={ref} />
             </Grid>
         </Grid>
     );

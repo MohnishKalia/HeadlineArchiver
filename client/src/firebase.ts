@@ -1,6 +1,8 @@
 import firebase from 'firebase/app';
 import 'firebase/auth';
 import 'firebase/firestore';
+import 'firebase/analytics';
+import 'firebase/performance';
 
 firebase.initializeApp({
     apiKey: "AIzaSyAqJ3rBF_ynBL0_v-d8khudDauw6Ug-1PA",
@@ -12,8 +14,11 @@ firebase.initializeApp({
     measurementId: "G-FXPZWXD7HJ"
 });
 
+export const aly = firebase.analytics();
+export const perf = firebase.performance();
 export const auth = firebase.auth();
 export const db = firebase.firestore();
 export const GoogleAuthProvider = firebase.auth.GoogleAuthProvider;
+
 export type Timestamp = firebase.firestore.Timestamp;
 export type User = firebase.User;
