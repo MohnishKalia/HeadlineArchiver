@@ -13,6 +13,10 @@ import makeStyles from '@material-ui/core/styles/makeStyles';
 
 import Highlight from '@material-ui/icons/Highlight';
 import Public from '@material-ui/icons/Public';
+import Modal from '@material-ui/core/Modal';
+import Fade from '@material-ui/core/Fade';
+import Backdrop from '@material-ui/core/Backdrop';
+import clsx from 'clsx';
 
 interface Screenshot {
     createdAt: Timestamp,
@@ -30,10 +34,27 @@ const useStyles = makeStyles((theme) => ({
         margin: 'auto'
     },
     image: {
-        height: 140,
         backgroundRepeat: 'no-repeat',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
+    },
+    cardImage: {
+        height: 140,
+    },
+    modal: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalImage: {
+        maxWidth: '100%',
+        height: 'auto',
+    },
+    paper: {
+        backgroundColor: theme.palette.background.paper,
+        border: '2px solid #000',
+        boxShadow: theme.shadows[5],
+        padding: theme.spacing(2, 4, 3),
     },
 }));
 
@@ -45,6 +66,15 @@ function getImageUrl(fileName: string) {
 
 export default function Main(props: { user: any }) {
     const [shots, setShots] = useState<Screenshot[]>([]);
+    const [open, setOpen] = React.useState(false);
+
+    const handleOpen = () => {
+        setOpen(true);
+    };
+
+    const handleClose = () => {
+        setOpen(false);
+    };
     // const dummy = useRef<HTMLElement>(null!);
     const increment = useRef(3);
     const classes = useStyles();
@@ -90,14 +120,29 @@ export default function Main(props: { user: any }) {
                     <Grid container item xs={12} key={i} alignItems="center" className={classes.separator}>
                         <Grid item xs={3}>
                             <Card elevation={3}>
-                                <CardActionArea>
+                                <CardActionArea onClick={handleOpen}>
                                     <CardMedia
-                                        className={classes.image}
+                                        className={clsx(classes.image, classes.cardImage)}
                                         image={getImageUrl(cnnFileName)}
                                         title="CNN Screenshot"
                                     />
                                 </CardActionArea>
                             </Card>
+                            <Modal
+                                aria-labelledby="transition-modal-title"
+                                className={classes.modal}
+                                open={open}
+                                onClose={handleClose}
+                                closeAfterTransition
+                                BackdropComponent={Backdrop}
+                                BackdropProps={{
+                                    timeout: 500,
+                                }}
+                            >
+                                <Fade in={open}>
+                                    <img src={getImageUrl(cnnFileName)} className={clsx(classes.image, classes.modalImage)} alt="CNN" />
+                                </Fade>
+                            </Modal>
                         </Grid>
                         <Grid item xs={6}>
                             <Typography variant="subtitle2" align="center">{createdAt.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</Typography>
@@ -105,14 +150,29 @@ export default function Main(props: { user: any }) {
                         </Grid>
                         <Grid item xs={3}>
                             <Card elevation={5}>
-                                <CardActionArea>
+                                <CardActionArea onClick={handleOpen}>
                                     <CardMedia
-                                        className={classes.image}
+                                        className={clsx(classes.image, classes.cardImage)}
                                         image={getImageUrl(foxFileName)}
                                         title="Fox Screenshot"
                                     />
                                 </CardActionArea>
                             </Card>
+                            <Modal
+                                aria-labelledby="transition-modal-title"
+                                className={classes.modal}
+                                open={open}
+                                onClose={handleClose}
+                                closeAfterTransition
+                                BackdropComponent={Backdrop}
+                                BackdropProps={{
+                                    timeout: 500,
+                                }}
+                            >
+                                <Fade in={open}>
+                                    <img src={getImageUrl(foxFileName)} className={clsx(classes.image, classes.modalImage)} alt="Fox" />
+                                </Fade>
+                            </Modal>
                         </Grid>
                     </Grid>
                 )
