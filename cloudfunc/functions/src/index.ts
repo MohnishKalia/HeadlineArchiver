@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import 'firebase-functions';
 import * as puppeteer from 'puppeteer';
 
 admin.initializeApp();
@@ -7,9 +8,9 @@ admin.initializeApp();
 const db = admin.firestore();
 const store = admin.storage();
 
-export const getScreenshots = functions.pubsub.schedule('*/30 * * * *').onRun(async ctx => {
+export const getScreenshots = functions.runWith({ memory: '2GB' }).pubsub.schedule('*/30 * * * *').onRun(async _ => {
     const now = Date.now();
-    
+
     const browser = await puppeteer.launch();
 
     const page = await browser.newPage();
