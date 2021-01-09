@@ -1,4 +1,5 @@
 import './App.css';
+import CssBaseline from '@material-ui/core/CssBaseline';
 
 import { Button, Container, Avatar } from '@material-ui/core';
 
@@ -30,6 +31,7 @@ export default function App() {
     const [user] = useAuthState(auth) as [User | null, any, any];
     return (
         <>
+            <CssBaseline/>
             <Header>
                 {user ? <SignOut name={user.displayName!} url={user.photoURL!} /> : <SignIn />}
             </Header>
