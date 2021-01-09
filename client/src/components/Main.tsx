@@ -58,8 +58,6 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-
-// TODO: change into an async function that gets access tokens and is used in getData
 function getImageUrl(fileName: string) {
     return `https://firebasestorage.googleapis.com/v0/b/headline-archiver.appspot.com/o/screenshots%2F${fileName}?alt=media`;
 }
@@ -90,7 +88,7 @@ export default function Main(props: { user: any }) {
 
             const tempDtos: Screenshot[] = [];
             data.forEach(doc => tempDtos.push(doc.data() as Screenshot));
-            
+
             if (tempDtos.length === 0)
                 setEof(true);
             setShots(shots.concat(tempDtos));
@@ -180,10 +178,6 @@ export default function Main(props: { user: any }) {
             <Grid item xs={12}>
                 <Divider ref={ref} />
             </Grid>
-
-            {/* <Grid item xs={12}>
-                <Button color="primary" onClick={() => getData()}>Get {increment.current} More</Button>
-            </Grid> */}
         </Grid>
     );
 }
