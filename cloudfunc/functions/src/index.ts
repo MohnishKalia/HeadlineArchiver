@@ -1,6 +1,8 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import 'firebase-functions';
+
+import * as fs from 'fs';
 import * as puppeteer from 'puppeteer';
 
 admin.initializeApp();
@@ -8,7 +10,7 @@ admin.initializeApp();
 const db = admin.firestore();
 const store = admin.storage();
 
-export const getScreenshots = functions.runWith({ memory: '2GB' }).pubsub.schedule('*/30 * * * *').onRun(async _ => {
+export const getScreenshots = functions.runWith({ memory: '2GB', timeoutSeconds: 180 }).pubsub.schedule('*/30 * * * *').onRun(async _ => {
     const now = Date.now();
 
     const browser = await puppeteer.launch();
@@ -50,11 +52,10 @@ export const getScreenshots = functions.runWith({ memory: '2GB' }).pubsub.schedu
     console.log('Adding data to firestore...');
     await db.collection('screenshots').add(payload);
 
-    // Removing because it takes time and the only writable directory is /tmp
-    // console.log('Removing images...')
-    // for (const site of newsSites) {
-    //     const fileName = `${site}-${now}.jpg`;
-    //     await fs.promises.unlink(fileName);
-    //     console.log(`${fileName} screenshot removed`);
-    // }
+    console.log('Removing images...')
+    for (const site of newsSites) {
+        const fileName = `${site}-${now}.jpg`;
+        await fs.promises.unlink(`/tmp/${fileName}`);
+        console.log(`${fileName} screenshot removed`);
+    }
 });
