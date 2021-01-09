@@ -13,7 +13,8 @@ const store = admin.storage();
 export const getScreenshots = functions.runWith({ memory: '2GB', timeoutSeconds: 240 }).pubsub.schedule('*/30 * * * *').onRun(async _ => {
     const now = Date.now();
 
-    const browser = await puppeteer.launch();
+    console.log('Starting puppeteer...')
+    const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1024, height: 768 });
