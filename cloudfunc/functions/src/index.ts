@@ -10,7 +10,7 @@ admin.initializeApp();
 const db = admin.firestore();
 const store = admin.storage();
 
-export const getScreenshots = functions.runWith({ memory: '2GB', timeoutSeconds: 180 }).pubsub.schedule('*/30 * * * *').onRun(async _ => {
+export const getScreenshots = functions.runWith({ memory: '2GB', timeoutSeconds: 240 }).pubsub.schedule('*/30 * * * *').onRun(async _ => {
     const now = Date.now();
 
     const browser = await puppeteer.launch();
@@ -58,4 +58,6 @@ export const getScreenshots = functions.runWith({ memory: '2GB', timeoutSeconds:
         await fs.promises.unlink(`/tmp/${fileName}`);
         console.log(`${fileName} screenshot removed`);
     }
+
+    console.log(`${(Date.now() - now) / 1000} seconds taken`);
 });
