@@ -68,7 +68,7 @@ export default function Main(props: { user: any }) {
     const [open, setOpen] = React.useState(false);
     const [modalFileName, setMFN] = React.useState("");
     
-    const [ref, inView] = useInView({ delay: 500 });
+    const [ref, inView] = useInView({ delay: 300, rootMargin: '400px 0px' });
     const [eof, setEof] = useState(false);
 
     const classes = useStyles();
