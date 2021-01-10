@@ -13,10 +13,14 @@ const store = admin.storage();
 /**
  * Estimated execution time: 35 seconds
  */
-export const getScreenshots = functions.runWith({ memory: '2GB'}).pubsub.schedule('*/30 * * * *').onRun(async _ => {
+export const getScreenshots = functions.runWith({ memory: '2GB' }).pubsub.schedule('*/30 * * * *').onRun(async _ => {
     const now = Date.now();
 
-    console.log('Starting puppeteer...')
+    function logWithTime(message: string) {
+        console.log(`${message} | ${(Date.now() - now) / 1000}s`);
+    }
+
+    logWithTime('Starting puppeteer...')
     const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
 
     const page = await browser.newPage();
@@ -26,7 +30,7 @@ export const getScreenshots = functions.runWith({ memory: '2GB'}).pubsub.schedul
 
     const payload: any = { createdAt: admin.firestore.Timestamp.fromDate(new Date(now)) };
 
-    console.log('Starting scraping...');
+    logWithTime('Starting scraping...');
     for (const site of newsSites) {
         const fileName = `${site}-${now}.jpg`;
 
@@ -36,10 +40,10 @@ export const getScreenshots = functions.runWith({ memory: '2GB'}).pubsub.schedul
             quality: 60,
             type: 'jpeg',
         });
-        console.log(`${fileName} screenshot taken`);
+        logWithTime(`${fileName} screenshot taken`);
 
 
-        console.log(`Adding ${fileName} to storage...`);
+        logWithTime(`Adding ${fileName} to storage...`);
         await store.bucket().upload(`/tmp/${fileName}`, {
             destination: `screenshots/${fileName}`,
             gzip: true,
@@ -53,13 +57,13 @@ export const getScreenshots = functions.runWith({ memory: '2GB'}).pubsub.schedul
 
     await browser.close();
 
-    console.log('Adding data to firestore...');
+    logWithTime('Adding data to firestore...');
     await db.collection('screenshots').add(payload);
 
-    console.log('Removing images...')
+    logWithTime('Removing images...')
     for (const site of newsSites) {
         const fileName = `${site}-${now}.jpg`;
         await fs.promises.unlink(`/tmp/${fileName}`);
-        console.log(`${fileName} screenshot removed`);
+        logWithTime(`${fileName} screenshot removed`);
     }
 });
