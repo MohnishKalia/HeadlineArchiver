@@ -10,15 +10,20 @@ admin.initializeApp();
 const db = admin.firestore();
 const store = admin.storage();
 
-/**
- * Estimated execution time: 35 seconds
- */
-export const getScreenshots = functions.runWith({ memory: '2GB' }).pubsub.schedule('*/30 * * * *').onRun(async _ => {
+async function getScreenshotsFunction(_: functions.EventContext) {
+    // Setup
+
     const now = Date.now();
 
-    function logWithTime(message: string) {
-        console.log(`${message} | ${(Date.now() - now) / 1000}s`);
-    }
+    const logWithTime = (message: string) => console.log(`${message} | ${(Date.now() - now) / 1000}s`);
+
+    const newsSites = ['cnn', 'fox'] as const;
+    const getFileName = (site: typeof newsSites[number]) => `${site}-${now}.jpg`;
+
+    const { GCLOUD_PROJECT, FIREBASE_CONFIG } = process.env;
+    const isProd = GCLOUD_PROJECT && FIREBASE_CONFIG;
+
+    // Scraping
 
     logWithTime('Starting puppeteer...')
     const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
@@ -26,13 +31,11 @@ export const getScreenshots = functions.runWith({ memory: '2GB' }).pubsub.schedu
     const page = await browser.newPage();
     await page.setViewport({ width: 1024, height: 768 });
 
-    const newsSites = ["cnn", "fox"] as const;
-
     const payload: any = { createdAt: admin.firestore.Timestamp.fromDate(new Date(now)) };
 
     logWithTime('Starting scraping...');
     for (const site of newsSites) {
-        const fileName = `${site}-${now}.jpg`;
+        const fileName = getFileName(site);
 
         await page.goto(`https://${site === 'fox' ? 'foxnews' : site}.com`);
         await page.screenshot({
@@ -42,28 +45,38 @@ export const getScreenshots = functions.runWith({ memory: '2GB' }).pubsub.schedu
         });
         logWithTime(`${fileName} screenshot taken`);
 
-
-        logWithTime(`Adding ${fileName} to storage...`);
-        await store.bucket().upload(`/tmp/${fileName}`, {
-            destination: `screenshots/${fileName}`,
-            gzip: true,
-            metadata: {
-                cacheControl: 'public, max-age=31536000',
-            },
-        });
+        if (isProd) {
+            logWithTime(`Adding ${fileName} to storage...`);
+            await store.bucket().upload(`/tmp/${fileName}`, {
+                destination: `screenshots/${fileName}`,
+                gzip: true,
+                metadata: {
+                    cacheControl: 'public, max-age=31536000',
+                },
+            });
+        }
 
         payload[`${site}FileName`] = fileName;
     }
 
     await browser.close();
 
-    logWithTime('Adding data to firestore...');
-    await db.collection('screenshots').add(payload);
+    if (isProd) {
+        logWithTime('Adding data to firestore...');
+        await db.collection('screenshots').add(payload);
+    }
+
+    // Cleanup
 
     logWithTime('Removing images...')
     for (const site of newsSites) {
-        const fileName = `${site}-${now}.jpg`;
+        const fileName = getFileName(site);
         await fs.promises.unlink(`/tmp/${fileName}`);
         logWithTime(`${fileName} screenshot removed`);
     }
-});
+}
+
+/**
+ * Estimated execution time: 35 seconds
+ */
+export const getScreenshots = functions.runWith({ memory: '2GB' }).pubsub.schedule('*/30 * * * *').onRun(getScreenshotsFunction);
