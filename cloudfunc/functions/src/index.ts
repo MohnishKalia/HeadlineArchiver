@@ -2,15 +2,21 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import 'firebase-functions';
 
-import * as fs from 'fs';
-import * as puppeteer from 'puppeteer';
+import { promises as fs } from 'fs';
+import puppeteer from 'puppeteer-extra';
+
+import AdblockerPlugin from 'puppeteer-extra-plugin-adblocker';
+puppeteer.use(AdblockerPlugin({ blockTrackers: true }));
 
 admin.initializeApp();
 
 const db = admin.firestore();
 const store = admin.storage();
 
-async function getScreenshotsFunction(_: functions.EventContext) {
+/**
+ * Estimated execution time: 35 seconds
+ */
+export const getScreenshots = functions.runWith({ memory: '2GB' }).pubsub.schedule('*/30 * * * *').onRun(async _ => {
     // Setup
 
     const now = Date.now();
@@ -20,13 +26,15 @@ async function getScreenshotsFunction(_: functions.EventContext) {
     const newsSites = ['cnn', 'fox'] as const;
     const getFileName = (site: typeof newsSites[number]) => `${site}-${now}.jpg`;
 
-    const { GCLOUD_PROJECT, FIREBASE_CONFIG } = process.env;
-    const isProd = GCLOUD_PROJECT && FIREBASE_CONFIG;
+    const { GCLOUD_PROJECT, FIREBASE_CONFIG, LOCAL } = process.env;
+    const isProd = GCLOUD_PROJECT && FIREBASE_CONFIG && !LOCAL;
 
     // Scraping
 
     logWithTime('Starting puppeteer...')
-    const browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    const browser = await puppeteer.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1024, height: 768 });
@@ -71,12 +79,7 @@ async function getScreenshotsFunction(_: functions.EventContext) {
     logWithTime('Removing images...')
     for (const site of newsSites) {
         const fileName = getFileName(site);
-        await fs.promises.unlink(`/tmp/${fileName}`);
+        await fs.unlink(`/tmp/${fileName}`);
         logWithTime(`${fileName} screenshot removed`);
     }
-}
-
-/**
- * Estimated execution time: 35 seconds
- */
-export const getScreenshots = functions.runWith({ memory: '2GB' }).pubsub.schedule('*/30 * * * *').onRun(getScreenshotsFunction);
+});
