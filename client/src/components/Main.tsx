@@ -59,10 +59,10 @@ function getImageUrl(fileName: string) {
 }
 
 export default function Main(props: { user: any }) {
-    const [view, setView] = useState('timeline');
-
     const [shots, setShots] = useState<Screenshot[]>([]);
     const [lastShot, setLastShot] = useState<Screenshot>();
+    
+    const [view, setView] = useState('timeline');
 
     const [open, setOpen] = useState(false);
     const [modalFileName, setMFN] = useState("");
@@ -192,13 +192,14 @@ export default function Main(props: { user: any }) {
                 </Fade>
             </Modal>
 
-            {eof &&
+            {eof && (
                 <Grid item>
                     <Alert severity="info">
                         <AlertTitle>End of archives</AlertTitle>
                     Congratulations — you have <strong>reached the end of our records</strong>
                     </Alert>
-                </Grid>}
+                </Grid>
+            )}
 
             <Grid item>
                 <Divider ref={ref} />
