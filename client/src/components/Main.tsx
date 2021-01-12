@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useInView } from 'react-intersection-observer';
 
-import { db, Timestamp } from '../firebase';
+import { Timestamp, Screenshot, getData } from '../utils';
 
 import Card from '@material-ui/core/Card';
 import CardActionArea from '@material-ui/core/CardActionArea';
@@ -8,21 +9,18 @@ import CardMedia from '@material-ui/core/CardMedia';
 import Divider from '@material-ui/core/Divider';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
-import makeStyles from '@material-ui/core/styles/makeStyles';
-
-import Highlight from '@material-ui/icons/Highlight';
-import Public from '@material-ui/icons/Public';
 import Modal from '@material-ui/core/Modal';
 import Fade from '@material-ui/core/Fade';
 import Backdrop from '@material-ui/core/Backdrop';
-import clsx from 'clsx';
-import { useInView } from 'react-intersection-observer';
 
-interface Screenshot {
-    createdAt: Timestamp,
-    cnnFileName: string,
-    foxFileName: string,
-}
+import Alert from '@material-ui/lab/Alert';
+import AlertTitle from '@material-ui/lab/AlertTitle';
+
+import makeStyles from '@material-ui/core/styles/makeStyles';
+import clsx from 'clsx';
+
+import Highlight from '@material-ui/icons/Highlight';
+import Public from '@material-ui/icons/Public';
 
 const useStyles = makeStyles((theme) => ({
     separator: {
@@ -50,12 +48,6 @@ const useStyles = makeStyles((theme) => ({
         maxWidth: '100%',
         height: 'auto',
     },
-    paper: {
-        backgroundColor: theme.palette.background.paper,
-        border: '2px solid #000',
-        boxShadow: theme.shadows[5],
-        padding: theme.spacing(2, 4, 3),
-    },
 }));
 
 function getImageUrl(fileName: string) {
@@ -63,11 +55,12 @@ function getImageUrl(fileName: string) {
 }
 
 export default function Main(props: { user: any }) {
-    const [shots, setShots] = useState<Screenshot[]>([]);
+    const [shots, setShots] = useState(new Map<Timestamp, Screenshot>());
+    const [lastShot, setLastShot] = useState<Screenshot>();
 
     const [open, setOpen] = React.useState(false);
     const [modalFileName, setMFN] = React.useState("");
-    
+
     const [ref, inView] = useInView({ delay: 300, rootMargin: '400px 0px' });
     const [eof, setEof] = useState(false);
 
@@ -78,26 +71,25 @@ export default function Main(props: { user: any }) {
         setMFN(fileName);
     }
 
+    const sortedShots = Array.from(shots.values()).sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
     useEffect(() => {
-        async function getData() {
-            let query = db.collection('screenshots').orderBy('createdAt', 'desc').limit(6);
-            const lastElt = shots[shots.length - 1];
-            if (lastElt)
-                query = query.startAfter(lastElt.createdAt);
-            const data = await query.get();
+        async function query() {
+            const newShots = await getData(lastShot);
 
-            const tempDtos: Screenshot[] = [];
-            data.forEach(doc => tempDtos.push(doc.data() as Screenshot));
-
-            if (tempDtos.length === 0)
-                setEof(true);
-            setShots(shots.concat(tempDtos));
+            setEof(newShots.length === 0);
+            setShots(prev => {
+                const temp = new Map(prev);
+                newShots.forEach(shot => temp.set(shot.createdAt, shot));
+                return temp;
+            });
+            setLastShot(newShots.slice(-1).pop());
         }
         if (!eof && props.user && inView)
-            getData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props.user, inView, eof]);
+            query();
+    }, [props.user, inView, eof, lastShot]);
 
+    // not signed in
     if (!props.user)
         return (
             <Typography variant="body1" color="inherit" align="center">To access this service, please authenticate above</Typography>
@@ -127,7 +119,7 @@ export default function Main(props: { user: any }) {
                 <Divider />
             </Grid>
 
-            {shots.map(
+            {sortedShots.map(
                 ({ createdAt, cnnFileName, foxFileName }, i) => (
                     <Grid container item xs={12} key={i} alignItems="center" className={classes.separator}>
                         <Grid item xs={3}>
@@ -174,6 +166,14 @@ export default function Main(props: { user: any }) {
                     <img src={getImageUrl(modalFileName)} className={clsx(classes.image, classes.modalImage)} alt="Current Screenshot" />
                 </Fade>
             </Modal>
+
+            {eof && 
+            <Grid item xs={12}>
+                <Alert severity="info">
+                    <AlertTitle>End of archives</AlertTitle>
+                    Congratulations — you have <strong>reached the end of our records</strong>
+                </Alert>
+            </Grid>}
 
             <Grid item xs={12}>
                 <Divider ref={ref} />

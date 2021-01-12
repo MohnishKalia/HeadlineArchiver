@@ -20,5 +20,22 @@ export const auth = firebase.auth();
 export const db = firebase.firestore();
 export const GoogleAuthProvider = firebase.auth.GoogleAuthProvider;
 
+export async function getData(lastElt?: Screenshot) {
+    let query = db.collection('screenshots').orderBy('createdAt', 'desc').limit(6);
+    if (lastElt)
+        query = query.startAfter(lastElt.createdAt);
+    const data = await query.get();
+
+    const tempShots: Screenshot[] = [];
+    data.forEach(doc => tempShots.push(doc.data() as Screenshot));
+
+    return tempShots;
+}
+
 export type Timestamp = firebase.firestore.Timestamp;
 export type User = firebase.User;
+export interface Screenshot {
+    createdAt: Timestamp,
+    cnnFileName: string,
+    foxFileName: string,
+}

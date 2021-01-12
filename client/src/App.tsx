@@ -3,7 +3,7 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 
 import { Button, Container, Avatar } from '@material-ui/core';
 
-import { auth, GoogleAuthProvider, User } from './firebase';
+import { auth, GoogleAuthProvider, User } from './utils';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 import Header from './components/Header';
