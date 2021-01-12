@@ -20,7 +20,7 @@ export const auth = firebase.auth();
 export const db = firebase.firestore();
 export const GoogleAuthProvider = firebase.auth.GoogleAuthProvider;
 
-export async function getData(lastElt?: Screenshot, ) {
+export async function getData(lastElt?: Screenshot,) {
     let query = db.collection('screenshots').orderBy('createdAt', 'desc').limit(6);
     if (lastElt)
         query = query.startAfter(lastElt.createdAt);
@@ -34,6 +34,16 @@ export async function getData(lastElt?: Screenshot, ) {
 
 export function getImageUrl(fileName: string) {
     return `https://firebasestorage.googleapis.com/v0/b/headline-archiver.appspot.com/o/screenshots%2F${fileName}?alt=media`;
+}
+
+/**
+ * First is date string, second is time string
+ * @param timestamp Google timestamp
+ */
+export function getTimestampParts(timestamp: Timestamp) {
+    const date = timestamp.toDate();
+    return [date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+        , date.toLocaleTimeString()] as const;
 }
 
 export type Timestamp = firebase.firestore.Timestamp;

@@ -13,7 +13,7 @@ import AlertTitle from '@material-ui/lab/AlertTitle';
 
 import clsx from 'clsx';
 import { useInView } from 'react-intersection-observer';
-import { getData, getImageUrl, Screenshot, ViewProps } from '../utils';
+import { getData, getImageUrl, getTimestampParts, Screenshot, ViewProps } from '../utils';
 
 const useStyles = makeStyles((theme) => ({
     separator: {
@@ -70,8 +70,8 @@ export default function TimelineView({ user, handleOpen }: ViewProps) {
                             </Card>
                         </Grid>
                         <Grid item xs={6}>
-                            <Typography variant="subtitle2" align="center">{createdAt.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</Typography>
-                            <Typography variant="h6" align="center">{createdAt.toDate().toLocaleTimeString()}</Typography>
+                            <Typography variant="subtitle2" align="center">{getTimestampParts(createdAt)[0]}</Typography>
+                            <Typography variant="h6" align="center">{getTimestampParts(createdAt)[1]}</Typography>
                         </Grid>
                         <Grid item xs={3}>
                             <Card elevation={5}>
