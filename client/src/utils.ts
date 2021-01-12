@@ -32,10 +32,19 @@ export async function getData(lastElt?: Screenshot, ) {
     return tempShots;
 }
 
+export function getImageUrl(fileName: string) {
+    return `https://firebasestorage.googleapis.com/v0/b/headline-archiver.appspot.com/o/screenshots%2F${fileName}?alt=media`;
+}
+
 export type Timestamp = firebase.firestore.Timestamp;
 export type User = firebase.User;
+export type Dis<T> = React.Dispatch<React.SetStateAction<T>>;
 export interface Screenshot {
     createdAt: Timestamp,
     cnnFileName: string,
     foxFileName: string,
+}
+export interface ViewProps {
+    user: User | null,
+    handleOpen: (fileName: string) => void
 }

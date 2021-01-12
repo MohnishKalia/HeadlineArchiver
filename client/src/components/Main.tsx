@@ -1,36 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { useInView } from 'react-intersection-observer';
+import React, { useState } from 'react';
 
-import { Screenshot, getData } from '../utils';
-
-import Card from '@material-ui/core/Card';
-import CardActionArea from '@material-ui/core/CardActionArea';
-import CardMedia from '@material-ui/core/CardMedia';
-import Divider from '@material-ui/core/Divider';
-import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
-import Modal from '@material-ui/core/Modal';
-import Fade from '@material-ui/core/Fade';
 import Backdrop from '@material-ui/core/Backdrop';
-
-import Alert from '@material-ui/lab/Alert';
-import AlertTitle from '@material-ui/lab/AlertTitle';
-import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
-import ToggleButton from '@material-ui/lab/ToggleButton';
-
+import Divider from '@material-ui/core/Divider';
+import Fade from '@material-ui/core/Fade';
+import Grid from '@material-ui/core/Grid';
+import Modal from '@material-ui/core/Modal';
 import makeStyles from '@material-ui/core/styles/makeStyles';
-import clsx from 'clsx';
+import Typography from '@material-ui/core/Typography';
 
 import Highlight from '@material-ui/icons/Highlight';
 import Public from '@material-ui/icons/Public';
-import ViewHeadline from '@material-ui/icons/ViewHeadline';
 import Search from '@material-ui/icons/Search';
+import ViewHeadline from '@material-ui/icons/ViewHeadline';
+
+import ToggleButton from '@material-ui/lab/ToggleButton';
+import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
+
+import clsx from 'clsx';
+import { getImageUrl, ViewProps } from '../utils';
+import SearchView from './SearchView';
+import TimelineView from './TimelineView';
 
 const useStyles = makeStyles((theme) => ({
-    separator: {
-        marginTop: theme.spacing(2),
-        marginBottom: theme.spacing(2),
-    },
     menuButton: {
         display: 'block',
         margin: 'auto'
@@ -39,9 +30,6 @@ const useStyles = makeStyles((theme) => ({
         backgroundRepeat: 'no-repeat',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-    },
-    cardImage: {
-        height: 140,
     },
     modal: {
         display: 'flex',
@@ -54,21 +42,11 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-function getImageUrl(fileName: string) {
-    return `https://firebasestorage.googleapis.com/v0/b/headline-archiver.appspot.com/o/screenshots%2F${fileName}?alt=media`;
-}
-
-export default function Main(props: { user: any }) {
-    const [shots, setShots] = useState<Screenshot[]>([]);
-    const [lastShot, setLastShot] = useState<Screenshot>();
-    
+export default function Main({ user }: Pick<ViewProps, 'user'>) {
     const [view, setView] = useState('timeline');
 
     const [open, setOpen] = useState(false);
     const [modalFileName, setMFN] = useState("");
-
-    const [ref, inView] = useInView({ delay: 300, rootMargin: '400px 0px' });
-    const [eof, setEof] = useState(false);
 
     const classes = useStyles();
 
@@ -77,22 +55,8 @@ export default function Main(props: { user: any }) {
         setMFN(fileName);
     }
 
-    const sortedShots = shots.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-
-    useEffect(() => {
-        async function query() {
-            const newShots = await getData(lastShot);
-
-            setEof(newShots.length === 0);
-            setLastShot(newShots.slice(-1).pop());
-            setShots(prev => prev.concat(newShots));
-        }
-        if (!eof && props.user && inView)
-            query();
-    }, [props.user, inView, eof, lastShot]);
-
     // not signed in
-    if (!props.user)
+    if (!user)
         return (
             <Typography variant="body1" color="inherit" align="center">To access this service, please authenticate above</Typography>
         );
@@ -143,39 +107,11 @@ export default function Main(props: { user: any }) {
                 <Divider />
             </Grid>
 
-            {/* Need handleOpen as prop */}
-            {sortedShots.map(
-                ({ createdAt, cnnFileName, foxFileName }, i) => (
-                    <Grid container item key={i} alignItems="center" className={classes.separator}>
-                        <Grid item xs={3}>
-                            <Card elevation={3}>
-                                <CardActionArea onClick={() => handleOpen(cnnFileName)}>
-                                    <CardMedia
-                                        className={clsx(classes.image, classes.cardImage)}
-                                        image={getImageUrl(cnnFileName)}
-                                        title="CNN Screenshot"
-                                    />
-                                </CardActionArea>
-                            </Card>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Typography variant="subtitle2" align="center">{createdAt.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</Typography>
-                            <Typography variant="h6" align="center">{createdAt.toDate().toLocaleTimeString()}</Typography>
-                        </Grid>
-                        <Grid item xs={3}>
-                            <Card elevation={5}>
-                                <CardActionArea onClick={() => handleOpen(foxFileName)}>
-                                    <CardMedia
-                                        className={clsx(classes.image, classes.cardImage)}
-                                        image={getImageUrl(foxFileName)}
-                                        title="Fox Screenshot"
-                                    />
-                                </CardActionArea>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )
-            )}
+            {
+                view === 'timeline'
+                    ? <TimelineView user={user} handleOpen={handleOpen} />
+                    : <SearchView user={user} handleOpen={handleOpen} />
+            }
 
             <Modal
                 className={classes.modal}
@@ -191,19 +127,6 @@ export default function Main(props: { user: any }) {
                     <img src={getImageUrl(modalFileName)} className={clsx(classes.image, classes.modalImage)} alt="Current Screenshot" />
                 </Fade>
             </Modal>
-
-            {eof && (
-                <Grid item>
-                    <Alert severity="info">
-                        <AlertTitle>End of archives</AlertTitle>
-                    Congratulations — you have <strong>reached the end of our records</strong>
-                    </Alert>
-                </Grid>
-            )}
-
-            <Grid item>
-                <Divider ref={ref} />
-            </Grid>
         </Grid>
     );
 }
