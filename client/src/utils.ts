@@ -20,7 +20,7 @@ export const auth = firebase.auth();
 export const db = firebase.firestore();
 export const GoogleAuthProvider = firebase.auth.GoogleAuthProvider;
 
-export async function getData(lastElt?: Screenshot) {
+export async function getData(lastElt?: Screenshot, ) {
     let query = db.collection('screenshots').orderBy('createdAt', 'desc').limit(6);
     if (lastElt)
         query = query.startAfter(lastElt.createdAt);
