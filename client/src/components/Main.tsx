@@ -1,34 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
-import { db, Timestamp } from '../firebase';
-
-import Card from '@material-ui/core/Card';
-import CardActionArea from '@material-ui/core/CardActionArea';
-import CardMedia from '@material-ui/core/CardMedia';
+import Backdrop from '@material-ui/core/Backdrop';
 import Divider from '@material-ui/core/Divider';
+import Fade from '@material-ui/core/Fade';
 import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
+import Modal from '@material-ui/core/Modal';
 import makeStyles from '@material-ui/core/styles/makeStyles';
+import Typography from '@material-ui/core/Typography';
 
 import Highlight from '@material-ui/icons/Highlight';
 import Public from '@material-ui/icons/Public';
-import Modal from '@material-ui/core/Modal';
-import Fade from '@material-ui/core/Fade';
-import Backdrop from '@material-ui/core/Backdrop';
-import clsx from 'clsx';
-import { useInView } from 'react-intersection-observer';
+import Search from '@material-ui/icons/Search';
+import ViewHeadline from '@material-ui/icons/ViewHeadline';
 
-interface Screenshot {
-    createdAt: Timestamp,
-    cnnFileName: string,
-    foxFileName: string,
-}
+import ToggleButton from '@material-ui/lab/ToggleButton';
+import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
+
+import clsx from 'clsx';
+import { getImageUrl, ViewProps } from '../utils';
+import SearchView from './SearchView';
+import TimelineView from './TimelineView';
 
 const useStyles = makeStyles((theme) => ({
-    separator: {
-        marginTop: theme.spacing(2),
-        marginBottom: theme.spacing(2),
-    },
     menuButton: {
         display: 'block',
         margin: 'auto'
@@ -37,9 +30,6 @@ const useStyles = makeStyles((theme) => ({
         backgroundRepeat: 'no-repeat',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-    },
-    cardImage: {
-        height: 140,
     },
     modal: {
         display: 'flex',
@@ -50,26 +40,13 @@ const useStyles = makeStyles((theme) => ({
         maxWidth: '100%',
         height: 'auto',
     },
-    paper: {
-        backgroundColor: theme.palette.background.paper,
-        border: '2px solid #000',
-        boxShadow: theme.shadows[5],
-        padding: theme.spacing(2, 4, 3),
-    },
 }));
 
-function getImageUrl(fileName: string) {
-    return `https://firebasestorage.googleapis.com/v0/b/headline-archiver.appspot.com/o/screenshots%2F${fileName}?alt=media`;
-}
+export default function Main({ user }: Pick<ViewProps, 'user'>) {
+    const [view, setView] = useState('timeline');
 
-export default function Main(props: { user: any }) {
-    const [shots, setShots] = useState<Screenshot[]>([]);
-
-    const [open, setOpen] = React.useState(false);
-    const [modalFileName, setMFN] = React.useState("");
-    
-    const [ref, inView] = useInView({ delay: 300, rootMargin: '400px 0px' });
-    const [eof, setEof] = useState(false);
+    const [open, setOpen] = useState(false);
+    const [modalFileName, setMFN] = useState("");
 
     const classes = useStyles();
 
@@ -78,34 +55,15 @@ export default function Main(props: { user: any }) {
         setMFN(fileName);
     }
 
-    useEffect(() => {
-        async function getData() {
-            let query = db.collection('screenshots').orderBy('createdAt', 'desc').limit(6);
-            const lastElt = shots[shots.length - 1];
-            if (lastElt)
-                query = query.startAfter(lastElt.createdAt);
-            const data = await query.get();
-
-            const tempDtos: Screenshot[] = [];
-            data.forEach(doc => tempDtos.push(doc.data() as Screenshot));
-
-            if (tempDtos.length === 0)
-                setEof(true);
-            setShots(shots.concat(tempDtos));
-        }
-        if (!eof && props.user && inView)
-            getData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [props.user, inView, eof]);
-
-    if (!props.user)
+    // not signed in
+    if (!user)
         return (
             <Typography variant="body1" color="inherit" align="center">To access this service, please authenticate above</Typography>
         );
 
     return (
-        <Grid container spacing={3}>
-            <Grid container item xs={12} alignItems="center">
+        <Grid container spacing={3} direction="column">
+            <Grid container item alignItems="center">
                 <Grid item xs={3}>
                     <Public className={classes.menuButton} color="inherit" fontSize="large" />
                 </Grid>
@@ -117,48 +75,43 @@ export default function Main(props: { user: any }) {
                 </Grid>
             </Grid>
 
-            <Grid item xs={12}>
-                <Typography variant="overline" display="block" gutterBottom align="center">
-                    Comparing CNN and Fox headlines at a specific time, click or tap to expand image
+            <Grid item>
+                <Typography variant="button" display="block" gutterBottom align="center">
+                    Comparing CNN and Fox headlines
+                </Typography>
+                <Typography variant="overline" display="block" align="center">
+                    Click or tap to expand image
+                </Typography>
+                <Typography variant="overline" display="block" align="center">
+                    Select between timeline and search views
                 </Typography>
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid container item justify="center">
+                <ToggleButtonGroup
+                    value={view}
+                    exclusive
+                    onChange={(_, view) => view && setView(view)}
+                    aria-label="view"
+                >
+                    <ToggleButton value="timeline" aria-label="timeline">
+                        <ViewHeadline />
+                    </ToggleButton>
+                    <ToggleButton value="search" aria-label="search">
+                        <Search />
+                    </ToggleButton>
+                </ToggleButtonGroup>
+            </Grid>
+
+            <Grid item>
                 <Divider />
             </Grid>
 
-            {shots.map(
-                ({ createdAt, cnnFileName, foxFileName }, i) => (
-                    <Grid container item xs={12} key={i} alignItems="center" className={classes.separator}>
-                        <Grid item xs={3}>
-                            <Card elevation={3}>
-                                <CardActionArea onClick={() => handleOpen(cnnFileName)}>
-                                    <CardMedia
-                                        className={clsx(classes.image, classes.cardImage)}
-                                        image={getImageUrl(cnnFileName)}
-                                        title="CNN Screenshot"
-                                    />
-                                </CardActionArea>
-                            </Card>
-                        </Grid>
-                        <Grid item xs={6}>
-                            <Typography variant="subtitle2" align="center">{createdAt.toDate().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</Typography>
-                            <Typography variant="h6" align="center">{createdAt.toDate().toLocaleTimeString()}</Typography>
-                        </Grid>
-                        <Grid item xs={3}>
-                            <Card elevation={5}>
-                                <CardActionArea onClick={() => handleOpen(foxFileName)}>
-                                    <CardMedia
-                                        className={clsx(classes.image, classes.cardImage)}
-                                        image={getImageUrl(foxFileName)}
-                                        title="Fox Screenshot"
-                                    />
-                                </CardActionArea>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                )
-            )}
+            {
+                view === 'timeline'
+                    ? <TimelineView user={user} handleOpen={handleOpen} />
+                    : <SearchView user={user} handleOpen={handleOpen} />
+            }
 
             <Modal
                 className={classes.modal}
@@ -174,10 +127,6 @@ export default function Main(props: { user: any }) {
                     <img src={getImageUrl(modalFileName)} className={clsx(classes.image, classes.modalImage)} alt="Current Screenshot" />
                 </Fade>
             </Modal>
-
-            <Grid item xs={12}>
-                <Divider ref={ref} />
-            </Grid>
         </Grid>
     );
 }
