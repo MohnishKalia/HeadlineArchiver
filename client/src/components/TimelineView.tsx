@@ -33,9 +33,9 @@ const useStyles = makeStyles((theme) => ({
 export default function TimelineView({ user, handleOpen }: ViewProps) {
     const [shots, setShots] = useState<Screenshot[]>([]);
     const [lastShot, setLastShot] = useState<Screenshot>();
+    const [eof, setEof] = useState(false);
 
     const [ref, inView] = useInView({ delay: 300, rootMargin: '400px 0px' });
-    const [eof, setEof] = useState(false);
 
     const classes = useStyles();
 
@@ -51,11 +51,9 @@ export default function TimelineView({ user, handleOpen }: ViewProps) {
             query();
     }, [user, inView, eof, lastShot]);
 
-    const sortedShots = shots.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-
     return (
         <>
-            {sortedShots.map(
+            {shots.map(
                 ({ createdAt, cnnFileName, foxFileName }, i) => (
                     <Grid container item key={i} alignItems="center" className={classes.separator}>
                         <Grid item xs={3}>

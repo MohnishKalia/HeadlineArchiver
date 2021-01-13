@@ -3,15 +3,21 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 
 import { Button, Container, Avatar } from '@material-ui/core';
 
-import { auth, GoogleAuthProvider, User } from './utils';
+import { auth, User } from './utils';
 import { useAuthState } from 'react-firebase-hooks/auth';
+
+import DateFnsUtils from '@date-io/moment'
+import {
+  MuiPickersUtilsProvider,
+} from '@material-ui/pickers';
 
 import Header from './components/Header';
 import Main from './components/Main';
+import firebase from 'firebase';
 
 function SignIn() {
     const signInWithGoogle = () => {
-        const provider = new GoogleAuthProvider();
+        const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider);
     };
     return (
@@ -30,7 +36,7 @@ function SignOut(props: { name: string, url: string }) {
 export default function App() {
     const [user] = useAuthState(auth) as [User | null, any, any];
     return (
-        <>
+        <MuiPickersUtilsProvider utils={DateFnsUtils}>
             <CssBaseline/>
             <Header>
                 {user ? <SignOut name={user.displayName!} url={user.photoURL!} /> : <SignIn />}
@@ -38,6 +44,6 @@ export default function App() {
             <Container maxWidth="lg">
                 <Main user={user} />
             </Container>
-        </>
+        </MuiPickersUtilsProvider>
     );
 }

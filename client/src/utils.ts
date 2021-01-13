@@ -18,12 +18,22 @@ export const aly = firebase.analytics();
 export const perf = firebase.performance();
 export const auth = firebase.auth();
 export const db = firebase.firestore();
-export const GoogleAuthProvider = firebase.auth.GoogleAuthProvider;
 
-export async function getData(lastElt?: Screenshot,) {
-    let query = db.collection('screenshots').orderBy('createdAt', 'desc').limit(6);
+interface QueryOptions {
+    startDate: Date, 
+    endDate: Date
+}
+
+export async function getData(lastElt?: Screenshot, queryOpts?: QueryOptions) {
+    let query = db.collection('screenshots').orderBy('createdAt', queryOpts ? 'asc' : 'desc').limit(6);
+    
     if (lastElt)
         query = query.startAfter(lastElt.createdAt);
+    if (queryOpts)
+        query = query
+            .where('createdAt', '>=', firebase.firestore.Timestamp.fromDate(queryOpts.startDate))
+            .where('createdAt', '<=', firebase.firestore.Timestamp.fromDate(queryOpts.endDate))
+
     const data = await query.get();
 
     const tempShots: Screenshot[] = [];
