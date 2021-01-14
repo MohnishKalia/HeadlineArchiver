@@ -14,6 +14,7 @@ import Alert from '@material-ui/lab/Alert';
 import AlertTitle from '@material-ui/lab/AlertTitle';
 
 import Image from '@material-ui/icons/Image';
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import useTheme from '@material-ui/core/styles/useTheme';
@@ -47,6 +48,11 @@ export default function SearchView({ user, handleOpen }: ViewProps) {
     const matches = useMediaQuery(theme.breakpoints.up('md'));
 
     const getShotData = useCallback(() => {
+        if (!user) return;
+
+        const validSpan = startDate.getTime() <= endDate.getTime();
+        if (!validSpan) return setError('Selected start and end dates were invalid.');
+
         async function query(last: Parameters<typeof getData>[0]) {
             const newShots = await getData(last, { startDate, endDate });
 
@@ -54,21 +60,17 @@ export default function SearchView({ user, handleOpen }: ViewProps) {
             setShots(prev => prev.concat(newShots));
         }
 
-        const validSpan = startDate.getTime() <= endDate.getTime();
-
-        if (validSpan) {
-            if (dateChanged) {
-                setShots([]);
-                setLastShot(undefined);
-                setDateChanged(false);
-                // lastShot is stale here, will reference old value even though we updated state above, need explicit undefined
-                query(undefined);
-                setError('');
-            } else
-                query(lastShot);
+        if (dateChanged) {
+            setShots([]);
+            setLastShot(undefined);
+            setDateChanged(false);
+            // lastShot is stale here, will reference old value even though we updated state above, need explicit undefined
+            query(undefined);
+            setError('');
         } else
-            setError('Selected start and end dates were invalid.')
-    }, [endDate, startDate, dateChanged, lastShot]);
+            query(lastShot);
+
+    }, [endDate, startDate, dateChanged, lastShot, user]);
 
     const createColumn = useCallback((field: string, headerName: string, color?: PropTypes.Color) => {
         const obj: ColDef = {
@@ -119,7 +121,7 @@ export default function SearchView({ user, handleOpen }: ViewProps) {
                     <DateTimePicker
                         value={startDate}
                         onChange={date => {
-                            if (date) { 
+                            if (date) {
                                 const newDate = date.toDate();
                                 if (newDate.getTime() > endDate.getTime())
                                     return setError('Selected start date was invalid.');
@@ -131,12 +133,13 @@ export default function SearchView({ user, handleOpen }: ViewProps) {
                             }
                         }}
                         label="Start Date"
+                        minDate={new Date(2021, 0, 7)}
                         showTodayButton
                     />
                     <DateTimePicker
                         value={endDate}
                         onChange={date => {
-                            if (date) { 
+                            if (date) {
                                 const newDate = date.toDate();
                                 if (startDate.getTime() > newDate.getTime())
                                     return setError('Selected end date was invalid.');
@@ -148,13 +151,14 @@ export default function SearchView({ user, handleOpen }: ViewProps) {
                             }
                         }}
                         label="End Date"
+                        minDate={new Date(2021, 0, 7)}
                         showTodayButton
                     />
                     <Button
                         variant="contained"
                         color="default"
                         onClick={() => getShotData()}
-                        startIcon={<Image />}
+                        startIcon={<CloudDownloadIcon />}
                     >
                         Get More Data
                     </Button>
