@@ -1,14 +1,19 @@
+import { useMemo } from 'react';
 import './App.css';
-import CssBaseline from '@material-ui/core/CssBaseline';
 
-import { Button, Container, Avatar } from '@material-ui/core';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import Button from '@material-ui/core/Button';
+import Container from '@material-ui/core/Container';
+import Avatar from '@material-ui/core/Avatar';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
+import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 
 import { auth, User } from './utils';
 import { useAuthState } from 'react-firebase-hooks/auth';
 
 import DateFnsUtils from '@date-io/moment'
 import {
-  MuiPickersUtilsProvider,
+    MuiPickersUtilsProvider,
 } from '@material-ui/pickers';
 
 import Header from './components/Header';
@@ -28,22 +33,37 @@ function SignIn() {
 function SignOut(props: { name: string, url: string }) {
     return (
         <Button color="inherit" onClick={() => auth.signOut()}>
-            <Avatar alt={props.name} src={props.url} style={{marginRight: '1rem'}} /> Sign Out
+            <Avatar alt={props.name} src={props.url} style={{ marginRight: '1rem' }} /> Sign Out
         </Button>
     );
 }
 
 export default function App() {
     const [user] = useAuthState(auth) as [User | null, any, any];
+
+    const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+
+    const theme = useMemo(
+        () =>
+            createMuiTheme({
+                palette: {
+                    type: prefersDarkMode ? 'dark' : 'light',
+                },
+            }),
+        [prefersDarkMode],
+    );
+
     return (
-        <MuiPickersUtilsProvider utils={DateFnsUtils}>
-            <CssBaseline/>
-            <Header>
-                {user ? <SignOut name={user.displayName!} url={user.photoURL!} /> : <SignIn />}
-            </Header>
-            <Container maxWidth="lg">
-                <Main user={user} />
-            </Container>
-        </MuiPickersUtilsProvider>
+        <ThemeProvider theme={theme}>
+            <MuiPickersUtilsProvider utils={DateFnsUtils}>
+                <CssBaseline />
+                <Header>
+                    {user ? <SignOut name={user.displayName!} url={user.photoURL!} /> : <SignIn />}
+                </Header>
+                <Container maxWidth="lg">
+                    <Main user={user} />
+                </Container>
+            </MuiPickersUtilsProvider>
+        </ThemeProvider>
     );
 }
