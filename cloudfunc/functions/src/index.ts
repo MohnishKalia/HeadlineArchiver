@@ -16,7 +16,7 @@ const store = admin.storage();
 /**
  * Estimated execution time: 35 seconds
  */
-export const getScreenshots = functions.runWith({ memory: '2GB', timeoutSeconds: 40 }).pubsub.schedule('*/30 * * * *').onRun(async _ => {
+export const getScreenshots = functions.runWith({ memory: '2GB', timeoutSeconds: 60 }).pubsub.schedule('*/30 * * * *').onRun(async _ => {
     // Setup
 
     const now = Date.now();
